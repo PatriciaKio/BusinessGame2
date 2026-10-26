@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waste to Worth</title>
+<meta name="description" content="A strategy game that teaches the business side of the circular economy: match waste materials around the world to products backed by peer-reviewed research, then build a circular business model.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f1ea; --panel:#fffdf8; --ink:#1d2a24; --muted:#5d6b63; --line:#ddd6c8;
+  --land:#d9d2c0; --sea:#e7eef0; --grid:#d3dde0;
+  --accent:#1f7a5a; --accent-ink:#ffffff; --accent-soft:#dcefe6;
+  --warn:#b5561c; --warn-soft:#f8e6da; --gold:#c08a1e; --bad:#a23b3b; --bad-soft:#f6e0e0;
+  --econ:#c08a1e; --env:#1f7a5a; --soc:#3a62a8;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 6px 20px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121815; --panel:#1a221e; --ink:#e8eee9; --muted:#9aaba1; --line:#2c3832;
+    --land:#2f3b35; --sea:#16201c; --grid:#1f2a25;
+    --accent:#4fbf8f; --accent-ink:#0d1411; --accent-soft:#1f3a2e;
+    --warn:#e3894e; --warn-soft:#3a2a1e; --gold:#e0b04a; --bad:#e07a7a; --bad-soft:#3a2222;
+    --econ:#e0b04a; --env:#4fbf8f; --soc:#7ea2e6;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121815; --panel:#1a221e; --ink:#e8eee9; --muted:#9aaba1; --line:#2c3832;
+  --land:#2f3b35; --sea:#16201c; --grid:#1f2a25;
+  --accent:#4fbf8f; --accent-ink:#0d1411; --accent-soft:#1f3a2e;
+  --warn:#e3894e; --warn-soft:#3a2a1e; --gold:#e0b04a; --bad:#e07a7a; --bad-soft:#3a2222;
+  --econ:#e0b04a; --env:#4fbf8f; --soc:#7ea2e6;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.15;margin:0}
+button{font:inherit;cursor:pointer}
+a{color:var(--accent)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+
+/* Header */
+header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 0}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.logo{width:34px;height:34px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:var(--accent-ink);font-weight:800}
+.brand h1{font-size:22px}
+.brand small{display:block;color:var(--muted);font-size:12px;font-family:Inter,sans-serif;font-weight:500}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 12px;min-width:92px}
+.stat b{display:block;font-size:16px}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+nav{display:flex;gap:4px;overflow-x:auto;padding-bottom:10px}
+nav button{background:none;border:1px solid transparent;color:var(--muted);padding:6px 12px;border-radius:999px;white-space:nowrap;font-weight:500}
+nav button.on{background:var(--panel);border-color:var(--line);color:var(--ink)}
+.iconbtn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 10px;font-size:13px}
+
+/* Layout */
+main{padding:18px 0 40px}
+.view{display:none}
+.view.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.pad{padding:18px}
+
+/* Map */
+.mapcard{overflow:hidden}
+.maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.maphead h2{font-size:18px}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+svg.map{display:block;width:100%;height:auto;background:var(--sea)}
+.land{fill:var(--land)}
+.gridline{stroke:var(--grid);stroke-width:.25}
+.marker{cursor:pointer}
+.marker circle.dot{stroke:var(--panel);stroke-width:.8;transition:r .15s}
+.marker:hover circle.dot,.marker.sel circle.dot{r:4.2}
+.marker .pulse{fill:none;stroke-width:.6;opacity:.7;animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{r:3;opacity:.8}100%{r:9;opacity:0}}
+@media (prefers-reduced-motion:reduce){.marker .pulse{animation:none;opacity:0}}
+.marker text{font-size:4px;font-weight:600;fill:var(--ink);paint-order:stroke;stroke:var(--sea);stroke-width:1.2px;pointer-events:none}
+.locked circle.dot{fill:var(--muted)!important;opacity:.55}
+
+/* Side panel */
+.side h2{font-size:22px;margin-bottom:4px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:14px 0;font-size:14px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0}
+.steps{display:flex;gap:6px;margin:12px 0 16px}
+.steps span{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.steps span.done{background:var(--accent)}
+.opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;color:var(--ink)}
+.opt:hover{border-color:var(--accent)}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt b{display:block}
+.opt small{color:var(--muted);display:block;margin-top:2px}
+.opt .cost{float:right;font-size:12px;color:var(--muted);font-weight:600}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:11px 18px;font-weight:600}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap}
+.empty{text-align:center;color:var(--muted);padding:36px 18px}
+.empty h2{color:var(--ink);margin-bottom:8px}
+.callout{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:0 10px 10px 0;font-size:14px;margin:12px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.bars{margin:12px 0}
+.bar{display:grid;grid-template-columns:92px 1fr 34px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.bar .track{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar .fill{height:100%;border-radius:6px;transition:width .8s ease}
+.cite{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);margin-top:10px;padding-top:10px}
+.cite a{word-break:break-all}
+.evidence{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0}
+.evidence h3{font-size:16px;margin-bottom:6px}
+.evidence ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+
+/* Library/glossary/portfolio */
+.cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.ref{padding:14px 16px}
+.ref h3{font-size:15px;font-family:Inter,sans-serif;font-weight:600;margin-bottom:4px}
+.ref p{margin:4px 0;font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-right:4px}
+.gloss dt{font-weight:700;margin-top:12px}
+.gloss dd{margin:2px 0 0;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+.howto ol{padding-left:20px}
+.howto li{margin:8px 0}
+.models{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:10px}
+.models div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
+.models b{display:block;font-size:14px;margin-bottom:2px}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.on{display:flex}
+.modal .card{max-width:560px;width:100%;max-height:90vh;overflow:auto}
+.big{font-size:44px;font-family:Fraunces,serif;font-weight:800;color:var(--accent)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:20px 0 30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo">↻</div>
+        <div><h1>Waste to Worth</h1><small>A circular-economy venture game</small></div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <button class="iconbtn" id="themeBtn" title="Toggle theme">◐</button>
+    </div>
+    <nav id="nav">
+      <button data-v="play" class="on">World map</button>
+      <button data-v="portfolio">Portfolio</button>
+      <button data-v="library">Research library</button>
+      <button data-v="glossary">Glossary</button>
+      <button data-v="howto">How to play</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="view on" id="v-play">
+    <div class="grid">
+      <div class="card mapcard">
+        <div class="maphead">
+          <h2>Where is the waste?</h2>
+          <div class="legend">
+            <span><i style="background:var(--warn)"></i>Open opportunity</span>
+            <span><i style="background:var(--accent)"></i>Venture launched</span>
+            <span><i style="background:var(--muted)"></i>Locked</span>
+          </div>
+        </div>
+        <svg class="map" id="map" viewBox="0 5 360 140" role="img" aria-label="World map of waste-stream opportunities"></svg>
+      </div>
+      <div class="card pad side" id="side"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-portfolio"><div id="portfolio"></div></section>
+  <section class="view" id="v-library"><div id="library"></div></section>
+  <section class="view" id="v-glossary"><div class="card pad"><h2>Glossary</h2><dl class="gloss" id="gloss"></dl></div></section>
+  <section class="view" id="v-howto"><div class="card pad howto" id="howto"></div></section>
+</main>
+
+<div class="modal" id="modal"><div class="card pad" id="modalBody"></div></div>
+
+<footer>Educational game. Venture economics are simplified game units, not forecasts. Every material match links to its peer-reviewed source — read the papers before investing real money.</footer>
+
+<script>
+/* =========================================================
+   DATA
+   ========================================================= */
+const START_CAPITAL = 400000;
+const BASE_INVEST = 100000;
+
+const MODELS = {
+  circular_supply:{name:"Circular supply",desc:"Sell a recycled or bio-based input that replaces a virgin material in someone else's product."},
+  resource_recovery:{name:"Resource recovery",desc:"Get paid to take a waste stream (gate or collection fees) and sell what you recover from it."},
+  life_extension:{name:"Product life extension",desc:"Repair, refurbish or remanufacture products so they stay in use longer."},
+  paas:{name:"Product-as-a-service",desc:"Keep ownership and sell access or performance instead of the product itself."},
+  sharing:{name:"Sharing platform",desc:"Raise the utilization of under-used assets by letting many users share them."}
+};
+
+const LEVERS = {
+  certification:{name:"Testing & certification",cost:30000,desc:"Lab testing and standards approval so buyers trust the material.",econ:4,env:0,soc:0},
+  rnd:{name:"University R&D partnership",cost:25000,desc:"Solve a performance gap (moisture, strength, purity) with a research partner.",econ:3,env:3,soc:0},
+  collection:{name:"Collection cooperative",cost:30000,desc:"Organize and pay collectors or fishers for a steady, clean feedstock.",econ:2,env:2,soc:12},
+  offtake:{name:"Offtake agreement",cost:20000,desc:"Lock in an anchor buyer for a share of output at a set price.",econ:9,env:0,soc:0},
+  symbiosis:{name:"Industrial symbiosis",cost:25000,desc:"Co-locate with the waste producer to cut transport and secure supply.",econ:5,env:7,soc:0},
+  finance:{name:"Blended green finance",cost:10000,desc:"Grant plus low-interest loan that lowers your cost of capital.",econ:6,env:0,soc:2}
+};
+
+/* Regions: x = lon + 180, y = 90 - lat */
+const REGIONS = [
+{
+  id:"mekong", tier:1, name:"Mekong Delta", country:"Vietnam", lon:106, lat:10,
+  material:"Rice husks", abundance:"Very high",
+  volume:"Rice milling leaves about a fifth of the grain as husk; one review puts global husk output near 100 million tonnes a year (est.).",
+  disposal:"Open burning, dumping in canals, low-efficiency fuel",
+  context:"Dense rice milling clusters, fast-growing construction sector, cement is a major cost and CO₂ source.",
+  products:[
+    {name:"Supplementary cementitious material (rice husk ash replaces part of the cement)",fit:1,why:"Controlled burning turns husk into ash rich in amorphous silica that reacts like a pozzolan in concrete."},
+    {name:"Fuel briquettes",fit:0.45,why:"Works, but it is low value and simply burns the resource — the ash is left as waste."},
+    {name:"Transparent food packaging film",fit:0,why:"No credible route: husk is mostly silica, cellulose and lignin and has no evidence base for clear films."}
+  ],
+  best:["circular_supply"], ok:["resource_recovery"],
+  barrier:"certification", barrierText:"Ash quality swings with burning temperature and grinding. Cement buyers need certified, consistent batches.",
+  base:{econ:78,env:82,soc:60},
+  evidence:{
+    finding:"Properly burnt and ground rice husk ash is highly reactive; blended concrete shows a denser microstructure, strong mechanical performance and better durability in harsh exposure.",
+    trl:"High (TRL 7–9): used commercially in some markets, but quality control is the make-or-break step.",
+    limits:"Reactivity depends on burning time, temperature and fineness. Long-term durability of reinforced RHA concrete is still under-studied.",
+    cite:{authors:"Siddika, A., Al Mamun, M.A., Alyousef, R., Mohammadhosseini, H.",year:2021,title:"State-of-the-art-review on rice husk ash: A supplementary cementitious material in concrete",journal:"Journal of King Saud University – Engineering Sciences, 33(5), 294–307",doi:"10.1016/j.jksues.2020.10.006"}
+  },
+  lesson:"Agricultural residues become valuable when you sell them into a big, carbon-intensive market (cement) as a drop-in substitute."
+},
+{
+  id:"saopaulo", tier:1, name:"São Paulo state", country:"Brazil", lon:-48, lat:-22,
+  material:"Sugarcane bagasse", abundance:"Very high",
+  volume:"Bagasse is the fibrous residue left after every tonne of cane is crushed; Brazil is the world's largest cane producer.",
+  disposal:"Burned in mill boilers for steam and power",
+  context:"Bans and taxes on single-use plastics are spreading; food-service brands want fiber packaging.",
+  products:[
+    {name:"Molded-fiber food packaging (trays, clamshells, plates)",fit:1,why:"Bagasse pulp can replace both single-use plastic and higher-cost virgin wood fiber in molded packaging."},
+    {name:"Regenerated cellulose textile fiber",fit:0.4,why:"Technically possible but capital-intensive and competes with established dissolving-pulp supply."},
+    {name:"Structural steel beams",fit:0,why:"A plant fiber cannot substitute for structural steel."}
+  ],
+  best:["circular_supply"], ok:["resource_recovery"],
+  barrier:"rnd", barrierText:"Fiber packaging protects less against moisture and oxygen than plastic. You need better coatings or treatments that are still compostable.",
+  base:{econ:74,env:72,soc:58},
+  evidence:{
+    finding:"Carbonate and bicarbonate pulping gave roughly 72% yield; a small dose of cationic starch improved dryness and raised strength by up to about 60%.",
+    trl:"Medium-high (TRL 6–8): molded bagasse tableware is on the market; high-yield, low-energy pulping is newer.",
+    limits:"Molded fiber does not yet match plastic's barrier to moisture and oxygen, and drying energy is a key cost.",
+    cite:{authors:"Sarder, R., Debnath, M., Sutton, C., Kardam, S.K., Mani, K.A., Lucia, L., Pal, L.",year:2025,title:"Development of molded fibers-based packaging from sugarcane bagasse for sustainable alternatives to single-use plastics",journal:"BioResources, 20(3), 7147–7161",doi:"10.15376/biores.20.3.7147-7161"}
+  },
+  lesson:"Regulation (plastic bans) can create demand overnight, but you still have to close the performance gap with the product you replace."
+},
+{
+  id:"india", tier:1, name:"Chhattisgarh coal belt", country:"India", lon:82.7, lat:22.3,
+  material:"Coal fly ash", abundance:"Very high",
+  volume:"India is among the largest generators of fly ash in the world, alongside China and the USA.",
+  disposal:"Ash ponds and landfills next to power plants",
+  context:"Huge housing and infrastructure demand, rules pushing ash utilization, cement prices volatile.",
+  products:[
+    {name:"Geopolymer concrete (ash replaces Portland cement as binder)",fit:1,why:"Alkali-activated fly ash forms a binder with far lower CO₂ than clinker-based cement."},
+    {name:"Farm soil amendment",fit:0.35,why:"Studied, but heavy-metal content creates real regulatory and health risk."},
+    {name:"Glass drinking bottles",fit:0,why:"Ash chemistry and impurities make it unsuitable for food-contact glass."}
+  ],
+  best:["circular_supply","resource_recovery"], ok:[],
+  barrier:"certification", barrierText:"Engineers and building codes trust Portland cement. Geopolymer needs mix-design standards and test data to be specified.",
+  base:{econ:70,env:85,soc:55},
+  evidence:{
+    finding:"Fly-ash geopolymer concrete is a viable replacement for Portland cement concrete that cuts greenhouse emissions while using an industrial waste.",
+    trl:"Medium-high (TRL 6–8): precast and pilot structures exist; mainstream code acceptance is still limited.",
+    limits:"Requires alkaline activators (cost, handling), often heat curing, and ash chemistry varies plant to plant.",
+    cite:{authors:"",year:2022,title:"Fly Ash-Based Geopolymer Composites: A Review of the Compressive Strength and Microstructure Analysis",journal:"Materials, 15(20), 7098",doi:"10.3390/ma15207098"}
+  },
+  lesson:"Construction is a conservative market. Standards and certification are often a bigger barrier than the technology itself."
+},
+{
+  id:"srilanka", tier:1, name:"Coconut triangle", country:"Sri Lanka", lon:80.7, lat:7.5,
+  material:"Coconut husk (coir)", abundance:"High",
+  volume:"The husk is roughly a third of a coconut's weight, and large amounts pile up around processing sites.",
+  disposal:"Left to rot, burned, or sold as low-value fiber",
+  context:"Rural processing hubs, demand for wood-free panels as forests come under pressure.",
+  products:[
+    {name:"Wood-free fiberboard panels (MDF alternative)",fit:1,why:"Coir's strength and density are comparable to wood, and its high lignin content helps bonding."},
+    {name:"Erosion-control geotextile mats",fit:0.6,why:"Proven and sold today, but a lower-margin commodity product."},
+    {name:"Window glazing",fit:0,why:"An opaque natural fiber cannot replace transparent glass."}
+  ],
+  best:["circular_supply"], ok:["resource_recovery"],
+  barrier:"rnd", barrierText:"Coir absorbs a lot of water. Panels need fiber pre-treatment and formaldehyde-free bio-adhesives.",
+  base:{econ:66,env:70,soc:72},
+  evidence:{
+    finding:"Coir fiber is a promising wood substitute for panels such as MDF: its tensile strength and density are in the range of wood.",
+    trl:"Medium (TRL 5–7): lab and pilot boards are well studied; commercial adoption is limited.",
+    limits:"High water absorption needs alkali, silane or enzyme treatment; more work is needed on bio-based adhesives.",
+    cite:{authors:"Bawono, N.M.H., Bawono, B., Anggoro, P.W., Jamari, J.",year:2025,title:"Study of application of coconut coir fiber-based wood-based panels: A literature review",journal:"Composites Part C: Open Access, 17, 100588",doi:"10.1016/j.jcomc.2025.100588"}
+  },
+  lesson:"A strong social case (rural jobs) still needs a product that beats the incumbent on performance and price."
+},
+{
+  id:"baltic", tier:2, name:"Baltic fishing ports", country:"Latvia", lon:21, lat:57,
+  material:"Discarded fishing nets (nylon)", abundance:"Low–medium",
+  volume:"One study estimated about 53 tonnes of net waste a year for Latvia — and manufacturing scraps outweighed nets discarded at sea.",
+  disposal:"Landfill or energy recovery; lost nets become 'ghost gear'",
+  context:"EU extended producer responsibility for fishing gear, strong brand demand for recycled nylon.",
+  products:[
+    {name:"Recycled nylon yarn for apparel and carpets",fit:1,why:"Nets are largely nylon; mechanical or chemical recycling returns it to high-value yarn."},
+    {name:"Asphalt reinforcement",fit:0.65,why:"Also showed benefits in the same study, but at lower value per tonne."},
+    {name:"Home compost additive",fit:0,why:"Nylon does not biodegrade — it would just add plastic to soil."}
+  ],
+  best:["resource_recovery"], ok:["circular_supply"],
+  barrier:"collection", barrierText:"Nets are mixed materials, fouled with organics and scattered across ports. Collection and pre-cleaning decide profitability.",
+  base:{econ:56,env:80,soc:62},
+  evidence:{
+    finding:"Among valorization options, recycling nets into nylon gave the largest cuts in CO₂ and environmental damage costs; asphalt reinforcement also helped.",
+    trl:"High (TRL 7–9) for nylon recycling; the hard part is logistics, not chemistry.",
+    limits:"Small national volumes, mixed polymers, heavy organic fouling, and difficult disassembly push many nets to energy recovery instead.",
+    cite:{authors:"Zlaugotne, B., Pubule, J., Gusca, J.",year:2025,title:"Fishing net waste management: quantification and valorization",journal:"Frontiers in Marine Science, 12",doi:"10.3389/fmars.2025.1607436"}
+  },
+  lesson:"Small, scattered waste streams need aggregation across many sources — the business is really a logistics business."
+},
+{
+  id:"dhaka", tier:2, name:"Dhaka garment cluster", country:"Bangladesh", lon:90.4, lat:23.8,
+  material:"Pre-consumer textile cutting scraps", abundance:"Very high",
+  volume:"Thousands of garment factories generate cutting-room scraps daily, much of it single-fiber cotton.",
+  disposal:"Sold informally, burned or landfilled",
+  context:"Global brands have recycled-content targets; scraps are cleaner and easier to sort than used clothing.",
+  products:[
+    {name:"Fiber-to-fiber recycled yarn",fit:1,why:"Clean, sorted scraps can be shredded and re-spun, replacing virgin fiber."},
+    {name:"Incineration for factory steam",fit:0.3,why:"Recovers some energy but destroys material value — the least circular option."},
+    {name:"Landfill cover",fit:0.1,why:"No real product value; this is disposal with extra steps."}
+  ],
+  best:["circular_supply"], ok:["resource_recovery"],
+  barrier:"symbiosis", barrierText:"Value depends on sorting by fiber type and color at the source — partner with factories so scraps never get mixed.",
+  base:{econ:72,env:74,soc:70},
+  evidence:{
+    finding:"Across 41 studies, reuse and recycling generally reduced environmental impact compared with incineration and landfill, and reuse beat recycling.",
+    trl:"High (TRL 7–9) for mechanical cotton recycling; chemical recycling of blends is earlier stage.",
+    limits:"Benefits depend on recycled fiber truly replacing virgin fiber; some scenarios showed no gain for certain impact categories.",
+    cite:{authors:"Sandin, G., Peters, G.M.",year:2018,title:"Environmental impact of textile reuse and recycling – A review",journal:"Journal of Cleaner Production, 184, 353–365",doi:"10.1016/j.jclepro.2018.02.266"}
+  },
+  lesson:"Sorting at the source is cheaper than sorting later. Design your supply chain so the waste never becomes mixed waste."
+},
+{
+  id:"prd", tier:2, name:"Pearl River Delta", country:"China", lon:113, lat:23,
+  material:"E-waste (discarded TVs and electronics)", abundance:"Very high",
+  volume:"E-waste is one of the fastest-growing waste streams in the world.",
+  disposal:"Mix of formal recyclers and informal dismantling",
+  context:"Government subsidies for formal recycling, high metal prices, strict pollution enforcement.",
+  products:[
+    {name:"Refined copper and gold ingots (formal urban mining)",fit:1,why:"Real cost data show recovered Cu and Au can match the cost of virgin mining."},
+    {name:"Refurbished components for resale",fit:0.65,why:"Good for newer devices, but old TVs have little reuse value."},
+    {name:"Open-burning of cables for copper",fit:0,why:"Toxic, illegal and harmful to workers — not a business model."}
+  ],
+  best:["resource_recovery"], ok:["life_extension"],
+  barrier:"collection", barrierText:"Informal collectors capture most devices. You need fair-paying, formalized collection to secure volume.",
+  base:{econ:82,env:70,soc:64},
+  evidence:{
+    finding:"Using cost data from eight Chinese recyclers, copper and gold ingots were recovered at costs comparable to virgin mining; with subsidies and component sales, urban mining came out far cheaper.",
+    trl:"High (TRL 8–9): commercial in many countries.",
+    limits:"Results cover TV sets and only copper and gold; they rely partly on subsidies and may differ for other metals and countries.",
+    cite:{authors:"Zeng, X., Mathews, J.A., Li, J.",year:2018,title:"Urban mining of e-waste is becoming more cost-effective than virgin mining",journal:"Environmental Science & Technology, 52(8)",doi:"10.1021/acs.est.7b04909"}
+  },
+  lesson:"Policy (subsidies, enforcement) can flip the economics. Ask what happens to your margins if support is withdrawn."
+},
+{
+  id:"antofagasta", tier:2, name:"Antofagasta mining region", country:"Chile", lon:-70.4, lat:-23.6,
+  material:"Copper mine tailings", abundance:"Very high",
+  volume:"Copper mining produces vast tailings deposits that must be stored for decades.",
+  disposal:"Tailings dams and impoundments",
+  context:"Desert cities need building materials; mining firms face pressure over tailings-dam risk.",
+  products:[
+    {name:"Bricks and sand substitute for concrete",fit:1,why:"Tailings are physically similar to crusher sand and can partly replace it; brick routes are under study."},
+    {name:"Ornamental glass",fit:0.3,why:"Possible in theory, but iron and metal content make quality control hard."},
+    {name:"Farm soil",fit:0,why:"Residual metals make tailings unsuitable for growing food."}
+  ],
+  best:["resource_recovery"], ok:["circular_supply"],
+  barrier:"certification", barrierText:"Buyers worry about metal leaching and long-term durability. Testing against local standards is essential.",
+  base:{econ:62,env:76,soc:60},
+  evidence:{
+    finding:"Tailings have physical and chemical characteristics comparable to crusher sand, so they can partly replace sand in concrete and bituminous mixes.",
+    trl:"Medium (TRL 5–7): many lab studies, fewer full-scale plants.",
+    limits:"Tailings vary by mine and ore; leaching and long-term durability data are still thin.",
+    cite:{authors:"",year:2022,title:"Application of mine tailings sand as construction material – a review",journal:"MATEC Web of Conferences, 364, 05008",doi:"10.1051/matecconf/202236405008"}
+  },
+  lesson:"The waste producer (the mine) may pay you to take the waste — a hidden revenue line in resource recovery."
+},
+{
+  id:"andalusia", tier:3, name:"Andalusia", country:"Spain", lon:-4, lat:37.8,
+  material:"Olive pomace and olive stones", abundance:"High (seasonal)",
+  volume:"A recent review estimated 4–6 million tonnes of olive pomace from one Spanish season.",
+  disposal:"Burned as fuel, residual oil extraction",
+  context:"Mediterranean olive mills cluster tightly; EU bio-based product targets.",
+  products:[
+    {name:"Olive-stone filler for bio-composite profiles and parts",fit:1,why:"Milled stone flour works as a filler in polymer composites, replacing part of the fossil plastic."},
+    {name:"Solid biofuel",fit:0.55,why:"Common and easy, but low value and burns the material."},
+    {name:"Drinking-water additive",fit:0,why:"No evidence base or safe use case."}
+  ],
+  best:["circular_supply"], ok:["resource_recovery"],
+  barrier:"symbiosis", barrierText:"Supply is seasonal and wet. Co-locate drying and milling at the mills to stabilize feedstock all year.",
+  base:{econ:64,env:66,soc:56},
+  evidence:{
+    finding:"A life-cycle assessment of olive-stone/polypropylene and olive-stone/polyethylene composites found most of the footprint came from the fossil polymer matrix, not the olive filler.",
+    trl:"Medium (TRL 5–7): composite profiles exist; scaling and certification are ongoing.",
+    limits:"Because the polymer dominates impact, switching to bio-based matrices is the next step to make the product truly circular.",
+    cite:{authors:"Espadas-Aldana, G., Guaygua-Amaguaña, P., Vialle, C., Belaud, J.P., Evon, P., Sablayrolles, C.",year:2021,title:"Life Cycle Assessment of Olive Pomace as a Reinforcement in Polypropylene and Polyethylene Biocomposite Materials",journal:"Coatings, 11(5), 525",doi:"10.3390/coatings11050525"}
+  },
+  lesson:"Life-cycle assessment can reveal that the 'waste' part of your product is not the problem — the virgin part is."
+},
+{
+  id:"rotterdam", tier:3, name:"Rotterdam region", country:"Netherlands", lon:4.5, lat:52,
+  material:"Construction and demolition waste", abundance:"Very high",
+  volume:"Construction and demolition waste is one of the largest waste streams in Europe.",
+  disposal:"Crushed and down-cycled into road base",
+  context:"National circular-economy goals, public procurement that rewards recycled content.",
+  products:[
+    {name:"Recycled aggregate for new concrete",fit:1,why:"Recycled aggregates can make construction materials of quality comparable to natural aggregates."},
+    {name:"Road sub-base (down-cycling)",fit:0.6,why:"Already common and easy, but lower value."},
+    {name:"Building insulation foam",fit:0,why:"Crushed concrete and masonry cannot make foam insulation."}
+  ],
+  best:["resource_recovery"], ok:["circular_supply"],
+  barrier:"certification", barrierText:"Recycled aggregate varies batch to batch. Certification and selective demolition keep quality high enough for structural use.",
+  base:{econ:68,env:70,soc:52},
+  evidence:{
+    finding:"A review of 163 publications concluded that recycled aggregates can produce sand, pavements, bricks and concrete of quality comparable to natural aggregates, and that this is technically and economically feasible.",
+    trl:"High (TRL 8–9): widely used; high-grade structural use is the frontier.",
+    limits:"Heterogeneous feedstock, higher water absorption, and the need for selective demolition and certification.",
+    cite:{authors:"dos Reis, G.S., Quattrone, M., Ambrós, W.M., Cazacliu, B.G., Sampaio, C.H.",year:2021,title:"Current Applications of Recycled Aggregates from Construction and Demolition: A Review",journal:"Materials, 14(7), 1700",doi:"10.3390/ma14071700"}
+  },
+  lesson:"Moving up from down-cycling to equal-value recycling is where the margin is — and it usually depends on quality assurance."
+},
+{
+  id:"accra", tier:3, name:"Greater Accra", country:"Ghana", lon:-0.2, lat:5.6,
+  material:"Post-consumer plastic film and bottles", abundance:"High",
+  volume:"Fast-growing cities with limited formal collection generate large volumes of mixed plastic waste.",
+  disposal:"Dumpsites, open burning, drains",
+  context:"Big road-building needs, rising bitumen import costs, active informal waste pickers.",
+  products:[
+    {name:"Plastic-modified asphalt (shredded LDPE/HDPE, dry process)",fit:1,why:"Low-melting plastics can modify bituminous mixes, reducing binder demand and construction cost."},
+    {name:"Mixed-plastic lumber including PVC",fit:0.35,why:"Feasible for some plastics, but PVC adds toxic risk and quality issues."},
+    {name:"Open-pit burning for energy",fit:0,why:"Releases toxic smoke — not a legitimate business model."}
+  ],
+  best:["resource_recovery"], ok:["circular_supply"],
+  barrier:"collection", barrierText:"PVC and dark plastics must be kept out. Paying waste pickers to sort at the source protects quality.",
+  base:{econ:66,env:68,soc:80},
+  evidence:{
+    finding:"Low-melting plastics such as LDPE and HDPE reduced the optimum bitumen content; economic analyses showed up to about 10% lower pavement cost, and field roads performed well.",
+    trl:"Medium-high (TRL 6–8): field roads exist in several countries.",
+    limits:"PVC and dark-colored plastics are not recommended; long-term maintenance and microplastic release still need more study.",
+    cite:{authors:"",year:2024,title:"Upcycling of plastic waste in bituminous mixes using dry process: Review of laboratory to field performance",journal:"Construction and Building Materials",doi:"10.1016/j.conbuildmat.2024.136005"}
+  },
+  lesson:"Social inclusion (waste pickers) can be your competitive advantage, not just a cost."
+},
+{
+  id:"melbourne", tier:3, name:"Melbourne café scene", country:"Australia", lon:145, lat:-37.8,
+  material:"Spent coffee grounds", abundance:"Medium (dispersed)",
+  volume:"Thousands of cafés each produce small daily amounts — large in total, scattered in practice.",
+  disposal:"General waste to landfill, some composting",
+  context:"Strong café culture, landfill levies, consumer interest in upcycled products.",
+  products:[
+    {name:"Biorefinery: extract coffee oil and phenolics, then use the residue",fit:1,why:"Reviews map routes from grounds to lipids, phenolic compounds, lignin and biofuels."},
+    {name:"Compost",fit:0.5,why:"Useful and simple, but low value."},
+    {name:"Infant formula ingredient",fit:0,why:"No safety evidence or regulatory route."}
+  ],
+  best:["resource_recovery"], ok:["circular_supply","paas"],
+  barrier:"collection", barrierText:"Grounds are wet, dispersed and spoil quickly. A route-based café collection service is what makes volume viable.",
+  base:{econ:60,env:58,soc:62},
+  evidence:{
+    finding:"Grounds can yield lipids, phenolic compounds, lignin and biofuels in cascading biorefinery schemes; the review also compares techno-economic and environmental studies.",
+    trl:"Low-medium (TRL 4–6): mostly lab and pilot scale.",
+    limits:"Many routes are early stage; feasibility depends heavily on collection cost and on selling multiple co-products.",
+    cite:{authors:"Arias, A., Ioannidou, S.M., Giannakis, N., Feijoo, G., Moreira, M.T., Koutinas, A.",year:2023,title:"Review of potential and prospective strategies for the valorization of coffee grounds within the framework of a sustainable and circular bioeconomy",journal:"Industrial Crops and Products, 205, 117504",doi:"10.1016/j.indcrop.2023.117504"}
+  },
+  lesson:"Cascading — extracting the highest-value fraction first, then using what's left — is how biorefineries make thin margins work."
+}
+];
+
+const FOUNDATIONS = [
+  {authors:"Bocken, N.M.P., de Pauw, I., Bakker, C., van der Grinten, B.",year:2016,title:"Product design and business model strategies for a circular economy",journal:"Journal of Industrial and Production Engineering, 33(5), 308–320",doi:"10.1080/21681015.2016.1172124",note:"Introduces slowing, closing and narrowing resource loops — the framework behind this game's business models."},
+  {authors:"Geissdoerfer, M., Savaget, P., Bocken, N.M.P., Hultink, E.J.",year:2017,title:"The Circular Economy – A new sustainability paradigm?",journal:"Journal of Cleaner Production, 143, 757–768",doi:"10.1016/j.jclepro.2016.12.048",note:"Compares circular economy and sustainability concepts."},
+  {authors:"Kirchherr, J., Reike, D., Hekkert, M.",year:2017,title:"Conceptualizing the circular economy: An analysis of 114 definitions",journal:"Resources, Conservation and Recycling, 127, 221–232",doi:"10.1016/j.resconrec.2017.09.005",note:"Shows how differently 'circular economy' is defined."}
+];
+
+const FURTHER = [
+  {authors:"",year:2022,title:"Properties and Recyclability of Abandoned Fishing Net-Based Plastic Debris",journal:"Catalysts, 12(9), 948",doi:"10.3390/catal12090948",region:"baltic"},
+  {authors:"",year:2021,title:"Olive Stones as Filler for Polymer-Based Composites: A Review",journal:"Materials, 14(4), 845",doi:"10.3390/ma14040845",region:"andalusia"},
+  {authors:"Kourmentza, K., Economou, C.N., Tsafrakidou, P., Kornaros, M.",year:2018,title:"Spent coffee grounds make much more than waste: exploring recent advances and future exploitation strategies for the valorization of an emerging food waste stream",journal:"Journal of Cleaner Production, 172, 980–992",doi:"10.1016/j.jclepro.2017.10.088",region:"melbourne"},
+  {authors:"Sinduja Joseph, H., Pachiappan, T., et al.",year:2023,title:"A Comprehensive Review on Recycling of Construction Demolition Waste in Concrete",journal:"Sustainability, 15(6), 4932",doi:"10.3390/su15064932",region:"rotterdam"},
+  {authors:"",year:2022,title:"Production of green bricks from low-reactive copper mine tailings: Chemical and mechanical aspects",journal:"Construction and Building Materials",doi:"10.1016/j.conbuildmat.2022.126695",region:"antofagasta"}
+];
+
+const EVENTS = [
+  {title:"Virgin material prices spike",text:"Prices of the material you replace jump. Buyers suddenly want your substitute.",econ:14,env:0,soc:0,weight:3},
+  {title:"New landfill tax",text:"Disposal gets more expensive, so waste producers pay more to hand their waste to you.",econ:9,env:3,soc:0,weight:3},
+  {title:"Batch fails a quality test",text:"A shipment misses spec and is rejected.",econ:-18,env:-5,soc:0,weight:3,mitigate:"certification",only:["mekong","india","antofagasta","rotterdam","accra","saopaulo"]},
+  {title:"Feedstock competition",text:"A biomass power plant starts bidding for your feedstock.",econ:-14,env:0,soc:0,weight:3,mitigate:"symbiosis",only:["mekong","saopaulo","srilanka","andalusia","dhaka"]},
+  {title:"Anchor customer walks away",text:"Your largest buyer switches back to the conventional material.",econ:-15,env:-4,soc:0,weight:3,mitigate:"offtake"},
+  {title:"Collectors strike over low pay",text:"Feedstock deliveries stall for a month.",econ:-12,env:0,soc:-12,weight:2,mitigate:"collection",only:["baltic","prd","accra","melbourne"]},
+  {title:"Greenwashing accusation",text:"A news story questions your environmental claims.",econ:-10,env:0,soc:-4,weight:2,mitigate:"certification"},
+  {title:"Interest rates rise",text:"Your borrowing costs go up.",econ:-9,env:0,soc:0,weight:2,mitigate:"finance"},
+  {title:"Innovation grant awarded",text:"A public fund backs your scale-up.",econ:8,env:2,soc:2,weight:2},
+  {title:"Steady quarter",text:"No surprises — operations run as planned.",econ:0,env:0,soc:0,weight:3}
+];
+
+const GLOSSARY = [
+  ["Circular economy","An economic system that keeps products and materials in use at their highest value for as long as possible, and designs out waste and pollution."],
+  ["Circular business model","How a company creates, delivers and captures value while slowing, closing or narrowing resource loops."],
+  ["Slowing / closing / narrowing loops","Slowing: keep products in use longer. Closing: return materials to production after use. Narrowing: use fewer resources per product (Bocken et al., 2016)."],
+  ["Material substitution","Replacing a virgin or high-impact material with a waste-derived or bio-based one that does the same job."],
+  ["Industrial symbiosis","One facility's waste or by-product becomes another facility's input, often by locating them near each other."],
+  ["Valorization","Turning a waste or by-product into something with economic value."],
+  ["Upcycling vs. downcycling","Upcycling turns waste into something of equal or higher value; downcycling into something of lower value (e.g. concrete into road base)."],
+  ["Supplementary cementitious material (SCM)","A material such as fly ash or rice husk ash that replaces part of the Portland cement in concrete."],
+  ["Pozzolan","A silica-rich material that reacts with calcium hydroxide in cement to form extra binding compounds."],
+  ["Geopolymer","A cement-free binder made by activating aluminosilicate materials (e.g. fly ash) with alkaline solutions."],
+  ["Urban mining","Recovering metals and materials from discarded products and buildings instead of from ore."],
+  ["Extended producer responsibility (EPR)","Policy that makes producers financially or physically responsible for their products at end of life."],
+  ["Offtake agreement","A contract in which a buyer commits to purchase a share of future output, reducing market risk for the producer."],
+  ["Gate fee","The fee a waste producer pays to hand its waste to a treatment or recycling facility."],
+  ["Life cycle assessment (LCA)","A method for measuring environmental impacts across a product's whole life, from raw material to disposal."],
+  ["Technology readiness level (TRL)","A 1–9 scale of how mature a technology is, from basic research (1) to proven commercial operation (9)."],
+  ["Greenwashing","Making misleading claims about the environmental benefits of a product or company."],
+  ["Cascading use","Using a resource first for its highest-value purpose, then using what's left for lower-value purposes."]
+];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const KEY = "waste-to-worth-v1";
+function freshState(){return {capital:START_CAPITAL,co2:0,jobs:0,ventures:{},seenIntro:false,ended:false};}
+let S = freshState();
+try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(freshState(),JSON.parse(raw));}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+let selected = null;   // region id
+let draft = null;      // {step, product, model, levers:[]}
+
+const $ = s=>document.querySelector(s);
+const fmt$ = n=>(n<0?"−":"")+"$"+Math.abs(Math.round(n)).toLocaleString();
+const count = ()=>Object.keys(S.ventures).length;
+const unlocked = r => r.tier===1 || (r.tier===2 && count()>=2) || (r.tier===3 && count()>=5);
+const R = id => REGIONS.find(r=>r.id===id);
+function citeHTML(c){
+  const a = c.authors ? c.authors+" " : "";
+  return `${a}(${c.year}). <i>${c.title}</i>. ${c.journal}. <a href="https://doi.org/${c.doi}" target="_blank" rel="noopener">doi:${c.doi}</a>`;
+}
+
+/* =========================================================
+   RENDER: HEADER STATS
+   ========================================================= */
+function renderStats(){
+  $("#stats").innerHTML = `
+    <div class="stat"><span>Capital</span><b style="color:var(--econ)">${fmt$(S.capital)}</b></div>
+    <div class="stat"><span>CO₂ avoided</span><b style="color:var(--env)">${S.co2.toLocaleString()} kt</b></div>
+    <div class="stat"><span>Jobs</span><b style="color:var(--soc)">${S.jobs.toLocaleString()}</b></div>
+    <div class="stat"><span>Ventures</span><b>${count()} / ${REGIONS.length}</b></div>`;
+}
+
+/* =========================================================
+   RENDER: MAP
+   ========================================================= */
+const LAND = [
+ "12,24 40,20 85,18 105,28 120,40 110,47 100,58 98,65 83,64 83,72 92,75 97,81 102,82 90,76 75,70 63,58 56,50 55,41 45,32 28,31 15,30",
+ "102,82 120,80 130,90 145,95 140,112 132,118 122,128 115,145 108,140 108,120 110,108 100,95",
+ "170,54 171,47 178,46 175,42 185,38 188,35 190,32 185,28 195,21 208,19 220,23 225,35 220,45 208,49 205,54 195,52 190,46 183,47",
+ "163,69 170,60 175,54 190,53 200,58 212,59 215,62 223,78 231,78 220,95 220,105 213,117 200,125 195,118 192,105 190,92 188,86 175,85 165,80",
+ "208,49 220,45 225,35 220,23 240,20 260,17 280,13 320,18 350,22 360,24 340,30 320,35 315,47 302,50 302,60 290,70 288,78 284,89 280,80 278,74 272,68 268,68 260,82 253,70 246,65 237,65 232,78 223,78 215,62 216,54",
+ "294,112 310,102 322,101 333,115 330,127 320,128 310,122 295,124",
+ "130,30 160,20 160,8 120,8 110,13",
+ "175,40 181,38 178,32 174,34",
+ "310,59 321,49 322,45 320,54",
+ "258,80 262,81 261,86 258,85",
+ "275,88 285,92 300,96 312,96 300,98 285,96",
+ "330,128 336,128 334,134"
+];
+function renderMap(){
+  let g = "";
+  for(let x=0;x<=360;x+=30) g+=`<line class="gridline" x1="${x}" y1="0" x2="${x}" y2="180"/>`;
+  for(let y=0;y<=180;y+=30) g+=`<line class="gridline" x1="0" y1="${y}" x2="360" y2="${y}"/>`;
+  g += LAND.map(p=>`<polygon class="land" points="${p}"/>`).join("");
+  REGIONS.forEach(r=>{
+    const x=r.lon+180, y=90-r.lat, done=!!S.ventures[r.id], open=unlocked(r);
+    const col = done?"var(--accent)":"var(--warn)";
+    const labelLeft = ["prd","dhaka","melbourne"].includes(r.id);
+    g += `<g class="marker ${open?"":"locked"} ${selected===r.id?"sel":""}" data-id="${r.id}" tabindex="0" role="button" aria-label="${r.name}, ${r.material}">
+      ${open&&!done?`<circle class="pulse" cx="${x}" cy="${y}" r="3" stroke="${col}"/>`:""}
+      <circle class="dot" cx="${x}" cy="${y}" r="3" fill="${col}"/>
+      <text x="${labelLeft?x+5:x-5}" y="${y-4}" text-anchor="${labelLeft?"start":"end"}">${r.material.split(" (")[0]}</text>
+    </g>`;
+  });
+  $("#map").innerHTML = g;
+  document.querySelectorAll(".marker").forEach(m=>{
+    const go=()=>selectRegion(m.dataset.id);
+    m.addEventListener("click",go);
+    m.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});
+  });
+}
+
+/* =========================================================
+   RENDER: SIDE PANEL (venture flow)
+   ========================================================= */
+function selectRegion(id){
+  selected=id; const r=R(id);
+  draft = (!S.ventures[id] && unlocked(r)) ? {step:0,product:null,model:null,levers:[]} : null;
+  renderMap(); renderSide();
+  if(window.innerWidth<900) $("#side").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function stepsBar(n){return `<div class="steps">${[0,1,2,3].map(i=>`<span class="${i<=n?"done":""}"></span>`).join("")}</div>`;}
+
+function renderSide(){
+  const el=$("#side");
+  if(!selected){
+    el.innerHTML = `<div class="empty"><h2>Pick a waste stream</h2>
+      <p>Click a pulsing marker on the map. Each one is a region with an abundant waste material waiting for a business idea.</p>
+      <p style="font-size:13px">Start with ${fmt$(START_CAPITAL)}. New regions unlock as you launch ventures.</p></div>`;
+    return;
+  }
+  const r=R(selected);
+  if(!unlocked(r)){
+    const need = r.tier===2?2:5;
+    el.innerHTML = `<div class="eyebrow">${r.country}</div><h2>${r.name}</h2>
+      <p><span class="pill warn">Locked</span></p>
+      <p>Launch ${need-count()} more venture${need-count()===1?"":"s"} to unlock this region. Advanced regions have smaller, messier or more regulated waste streams.</p>`;
+    return;
+  }
+  if(S.ventures[r.id]){ el.innerHTML = debriefHTML(r,S.ventures[r.id],false); bindDebrief(); return; }
+
+  const head = `<div class="eyebrow">${r.country}</div><h2>${r.name}</h2>`;
+  if(draft.step===0){
+    el.innerHTML = head + stepsBar(0) + `
+      <p><span class="pill">${r.material}</span> <span class="pill warn">Abundance: ${r.abundance}</span></p>
+      <dl class="facts">
+        <dt>Volume</dt><dd>${r.volume}</dd>
+        <dt>Today</dt><dd>${r.disposal}</dd>
+        <dt>Context</dt><dd>${r.context}</dd>
+      </dl>
+      <div class="callout">Your job: find a product that can use this material as a substitute — and that peer-reviewed research supports.</div>
+      <div class="row"><span></span><button class="btn" id="next">Find a product →</button></div>`;
+    $("#next").onclick=()=>{draft.step=1;renderSide();};
+    return;
+  }
+  if(draft.step===1){
+    const order = shuffledProducts(r);
+    el.innerHTML = head + stepsBar(1) + `<h3 style="font-size:17px">Step 1 · Match the material to a product</h3>
+      <p style="color:var(--muted);font-size:14px">Which product could use <b>${r.material.toLowerCase()}</b> in place of a conventional material?</p>
+      ${order.map(i=>`<button class="opt ${draft.product===i?"sel":""}" data-i="${i}"><b>${r.products[i].name}</b></button>`).join("")}
+      <div class="row"><button class="btn ghost" id="back">← Back</button><button class="btn" id="next" ${draft.product===null?"disabled":""}>Check the research →</button></div>`;
+    el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{draft.product=+b.dataset.i;renderSide();});
+    $("#back").onclick=()=>{draft.step=0;renderSide();};
+    $("#next").onclick=()=>{draft.step=2;renderSide();};
+    return;
+  }
+  if(draft.step===2){
+    const p=r.products[draft.product];
+    const verdict = p.fit>=0.9?["pill","Strong evidence"]:p.fit>=0.4?["pill warn","Weak fit"]:["pill bad","No credible route"];
+    el.innerHTML = head + stepsBar(1) + `<h3 style="font-size:17px">Research check</h3>
+      <p><span class="${verdict[0]}">${verdict[1]}</span></p>
+      <p><b>${p.name}</b><br><span style="color:var(--muted);font-size:14px">${p.why}</span></p>
+      ${p.fit>=0.9 ? evidenceHTML(r) : `<div class="callout ${p.fit<0.4?"bad":"warn"}">${p.fit<0.4
+        ? "If you launch this, lab trials will almost certainly fail and you'll lose most of your investment. Consider going back."
+        : "You can launch this, but returns will be modest. There's a better-supported option."}</div>`}
+      <div class="row"><button class="btn ghost" id="back">← Choose again</button><button class="btn" id="next">Choose business model →</button></div>`;
+    $("#back").onclick=()=>{draft.step=1;renderSide();};
+    $("#next").onclick=()=>{draft.step=3;renderSide();};
+    return;
+  }
+  if(draft.step===3){
+    el.innerHTML = head + stepsBar(2) + `<h3 style="font-size:17px">Step 2 · Choose a circular business model</h3>
+      <p style="color:var(--muted);font-size:14px">How will this venture create and capture value?</p>
+      ${Object.entries(MODELS).map(([k,m])=>`<button class="opt ${draft.model===k?"sel":""}" data-k="${k}"><b>${m.name}</b><small>${m.desc}</small></button>`).join("")}
+      <div class="row"><button class="btn ghost" id="back">← Back</button><button class="btn" id="next" ${!draft.model?"disabled":""}>Choose strategy levers →</button></div>`;
+    el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{draft.model=b.dataset.k;renderSide();});
+    $("#back").onclick=()=>{draft.step=2;renderSide();};
+    $("#next").onclick=()=>{draft.step=4;renderSide();};
+    return;
+  }
+  if(draft.step===4){
+    const cost = BASE_INVEST + draft.levers.reduce((s,k)=>s+LEVERS[k].cost,0);
+    el.innerHTML = head + stepsBar(3) + `<h3 style="font-size:17px">Step 3 · Pick up to 2 strategy levers</h3>
+      <div class="callout warn"><b>Key barrier:</b> ${r.barrierText}</div>
+      ${Object.entries(LEVERS).map(([k,l])=>`<button class="opt ${draft.levers.includes(k)?"sel":""}" data-k="${k}"><span class="cost">+${fmt$(l.cost)}</span><b>${l.name}</b><small>${l.desc}</small></button>`).join("")}
+      <p style="font-size:14px;margin:12px 0 0">Total investment: <b>${fmt$(cost)}</b> · Available: <b>${fmt$(S.capital)}</b></p>
+      <div class="row"><button class="btn ghost" id="back">← Back</button><button class="btn" id="next" ${cost>S.capital?"disabled":""}>Launch venture 🚀</button></div>
+      ${cost>S.capital?`<p style="color:var(--bad);font-size:13px">Not enough capital — drop a lever.</p>`:""}`;
+    el.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+      const k=b.dataset.k, i=draft.levers.indexOf(k);
+      if(i>=0) draft.levers.splice(i,1); else if(draft.levers.length<2) draft.levers.push(k); else {draft.levers.shift();draft.levers.push(k);}
+      renderSide();
+    });
+    $("#back").onclick=()=>{draft.step=3;renderSide();};
+    $("#next").onclick=()=>launch(r);
+    return;
+  }
+}
+
+const shuffleCache={};
+function shuffledProducts(r){
+  if(!shuffleCache[r.id]){const a=r.products.map((_,i)=>i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}shuffleCache[r.id]=a;}
+  return shuffleCache[r.id];
+}
+
+function evidenceHTML(r){
+  const e=r.evidence;
+  return `<div class="evidence"><h3>📄 What the research says</h3>
+    <ul><li><b>Finding:</b> ${e.finding}</li><li><b>Maturity:</b> ${e.trl}</li><li><b>Limits:</b> ${e.limits}</li></ul>
+    <div class="cite">${citeHTML(e.cite)}</div></div>`;
+}
+
+/* =========================================================
+   SIMULATION
+   ========================================================= */
+function pickEvent(r){
+  const pool = EVENTS.filter(e=>!e.only||e.only.includes(r.id));
+  const tot = pool.reduce((s,e)=>s+e.weight,0); let x=Math.random()*tot;
+  for(const e of pool){x-=e.weight;if(x<=0)return e;} return pool[pool.length-1];
+}
+const clamp=v=>Math.max(0,Math.min(100,Math.round(v)));
+
+function launch(r){
+  const p=r.products[draft.product];
+  const modelFit = r.best.includes(draft.model)?1 : r.ok.includes(draft.model)?0.7 : 0.4;
+  const solved = draft.levers.includes(r.barrier);
+  const lev = draft.levers.map(k=>LEVERS[k]);
+  const invest = BASE_INVEST + lev.reduce((s,l)=>s+l.cost,0);
+  let econ,env,soc,ev=null,mitigated=false,failed=false;
+
+  if(p.fit<0.2){
+    failed=true; econ=5; env=0; soc=5;
+  }else{
+    const barrierMult = solved?1:0.72;
+    econ = r.base.econ*p.fit*modelFit*barrierMult + lev.reduce((s,l)=>s+l.econ,0);
+    env  = r.base.env*p.fit*(solved?1:0.85) + lev.reduce((s,l)=>s+l.env,0);
+    soc  = r.base.soc*Math.max(p.fit,0.5)*(solved?1:0.9) + lev.reduce((s,l)=>s+l.soc,0);
+    ev = pickEvent(r);
+    let f = 1;
+    if(ev.mitigate && draft.levers.includes(ev.mitigate) && ev.econ<0){f=0.3;mitigated=true;}
+    econ += ev.econ*f; env += ev.env*f; soc += ev.soc*f;
+  }
+  econ=clamp(econ); env=clamp(env); soc=clamp(soc);
+  const mult = failed?0.15 : 0.25 + 1.75*(econ/100);
+  const ret = Math.round(invest*mult/1000)*1000;
+  const profit = ret-invest;
+  const co2 = failed?0:Math.round(env*1.6*Math.max(p.fit,0.3));
+  const jobs = failed?0:Math.round(soc*1.4);
+
+  S.capital += profit; S.co2 += co2; S.jobs += jobs;
+  S.ventures[r.id] = {product:draft.product,model:draft.model,levers:[...draft.levers],econ,env,soc,invest,ret,profit,co2,jobs,
+    event:ev?{title:ev.title,text:ev.text,econ:ev.econ}:null,mitigated,failed,solved,modelFit};
+  save(); draft=null;
+  renderStats(); renderMap();
+  $("#side").innerHTML = debriefHTML(r,S.ventures[r.id],true); bindDebrief();
+  renderPortfolio();
+  checkEnd();
+}
+
+function debriefHTML(r,v,fresh){
+  const p=r.products[v.product], m=MODELS[v.model];
+  const bar=(label,val,col)=>`<div class="bar"><span>${label}</span><div class="track"><div class="fill" style="width:${fresh?0:val}%;background:${col}" data-w="${val}"></div></div><b>${val}</b></div>`;
+  let notes = [];
+  if(v.failed) notes.push(`<div class="callout bad"><b>Lab trials failed.</b> ${p.why} You recovered only a small part of the investment.</div>`);
+  else{
+    if(p.fit<0.9) notes.push(`<div class="callout warn"><b>Weak product fit.</b> ${p.why}</div>`);
+    notes.push(v.modelFit===1
+      ? `<div class="callout"><b>Model fit: strong.</b> ${m.name} suits this waste stream.</div>`
+      : `<div class="callout warn"><b>Model fit: ${v.modelFit>=0.7?"workable":"poor"}.</b> ${MODELS[r.best[0]].name} would have captured more value here.</div>`);
+    notes.push(v.solved
+      ? `<div class="callout"><b>Barrier solved.</b> ${LEVERS[r.barrier].name} tackled the main risk.</div>`
+      : `<div class="callout warn"><b>Barrier not addressed.</b> ${r.barrierText} (Lever that fits: ${LEVERS[r.barrier].name}.)</div>`);
+    if(v.event) notes.push(`<div class="callout ${v.event.econ<0&&!v.mitigated?"bad":""}"><b>Event: ${v.event.title}.</b> ${v.event.text}${v.mitigated?" Your strategy levers absorbed most of the hit.":""}</div>`);
+  }
+  return `<div class="eyebrow">${r.country} · Venture report</div><h2>${r.name}</h2>
+    <p style="font-size:14px;color:var(--muted);margin:6px 0 0">${r.material} → ${p.name}<br>${m.name}${v.levers.length?" · "+v.levers.map(k=>LEVERS[k].name).join(", "):""}</p>
+    <div class="bars">${bar("Economic",v.econ,"var(--econ)")}${bar("Environment",v.env,"var(--env)")}${bar("Social",v.soc,"var(--soc)")}</div>
+    <p style="font-size:14px">Invested <b>${fmt$(v.invest)}</b> → returned <b>${fmt$(v.ret)}</b>
+      (<b style="color:${v.profit>=0?"var(--accent)":"var(--bad)"}">${v.profit>=0?"+":""}${fmt$(v.profit)}</b>) ·
+      ${v.co2} kt CO₂ avoided · ${v.jobs} jobs</p>
+    ${notes.join("")}
+    <div class="callout"><b>Lesson:</b> ${r.lesson}</div>
+    ${evidenceHTML(r)}
+    <div class="row"><span></span><button class="btn" id="closeDeb">Back to map</button></div>`;
+}
+function bindDebrief(){
+  requestAnimationFrame(()=>document.querySelectorAll(".fill[data-w]").forEach(f=>f.style.width=f.dataset.w+"%"));
+  const c=$("#closeDeb"); if(c) c.onclick=()=>{selected=null;renderMap();renderSide();};
+}
+
+/* =========================================================
+   END GAME
+   ========================================================= */
+function minCost(){return BASE_INVEST;}
+function checkEnd(){
+  const remaining = REGIONS.filter(r=>!S.ventures[r.id]);
+  const done = remaining.length===0;
+  const broke = !done && S.capital<minCost();
+  if((done||broke) && !S.ended){ S.ended=true; save(); setTimeout(()=>showEnd(broke),900); }
+}
+function scores(){
+  const v=Object.values(S.ventures); if(!v.length) return {e:0,n:0,s:0,idx:0};
+  const avg=k=>Math.round(v.reduce((a,x)=>a+x[k],0)/v.length);
+  const e=avg("econ"),n=avg("env"),s=avg("soc");
+  return {e,n,s,idx:Math.round(e*.4+n*.35+s*.25)};
+}
+function badges(){
+  const v=S.ventures, b=[];
+  const construction=["mekong","india","antofagasta","rotterdam","accra"].filter(id=>v[id]&&!v[id].failed).length;
+  if(construction>=3) b.push("🏗️ Green construction network");
+  if(["mekong","saopaulo","srilanka","andalusia","melbourne"].filter(id=>v[id]&&!v[id].failed).length>=3) b.push("🌾 Bio-based pioneer");
+  if(Object.values(v).filter(x=>x.solved).length>=6) b.push("🧩 Barrier breaker");
+  if(Object.values(v).every(x=>!x.failed)&&count()>=6) b.push("🔬 Evidence-led investor");
+  if(S.jobs>=600) b.push("🤝 Inclusive employer");
+  if(S.capital>=START_CAPITAL*2) b.push("💰 Doubled your capital");
+  return b;
+}
+function showEnd(broke){
+  const sc=scores();
+  const title = sc.idx>=75?"Circular Economy Visionary":sc.idx>=60?"Circular Strategist":sc.idx>=45?"Promising Founder":"Learning Entrepreneur";
+  $("#modalBody").innerHTML = `<div class="eyebrow">${broke?"Out of capital":"All regions explored"}</div>
+    <h2 style="font-size:26px;margin:4px 0 10px">${title}</h2>
+    <div class="big">${sc.idx}</div><p style="margin-top:0;color:var(--muted)">Circularity index (40% economic, 35% environment, 25% social)</p>
+    <div class="bars">
+      <div class="bar"><span>Economic</span><div class="track"><div class="fill" style="width:${sc.e}%;background:var(--econ)"></div></div><b>${sc.e}</b></div>
+      <div class="bar"><span>Environment</span><div class="track"><div class="fill" style="width:${sc.n}%;background:var(--env)"></div></div><b>${sc.n}</b></div>
+      <div class="bar"><span>Social</span><div class="track"><div class="fill" style="width:${sc.s}%;background:var(--soc)"></div></div><b>${sc.s}</b></div>
+    </div>
+    <p>Final capital <b>${fmt$(S.capital)}</b> · ${S.co2.toLocaleString()} kt CO₂ avoided · ${S.jobs.toLocaleString()} jobs · ${count()} ventures</p>
+    ${badges().length?`<div class="badges">${badges().map(b=>`<span class="pill">${b}</span>`).join("")}</div>`:""}
+    <div class="row"><button class="btn ghost" id="mClose">Review portfolio</button><button class="btn" id="mNew">Play again</button></div>`;
+  $("#modal").classList.add("on");
+  $("#mClose").onclick=()=>{$("#modal").classList.remove("on");show("portfolio");};
+  $("#mNew").onclick=()=>{resetGame();$("#modal").classList.remove("on");};
+}
+function resetGame(){
+  S=freshState(); S.seenIntro=true; save(); selected=null; draft=null;
+  for(const k in shuffleCache) delete shuffleCache[k];
+  renderAll(); show("play");
+}
+
+/* =========================================================
+   OTHER VIEWS
+   ========================================================= */
+function renderPortfolio(){
+  const ids=Object.keys(S.ventures);
+  const sc=scores();
+  $("#portfolio").innerHTML = `<div class="card pad">
+    <div class="row" style="margin-top:0"><h2>Your portfolio</h2><button class="btn ghost" id="resetBtn">Start over</button></div>
+    ${ids.length? `<p style="color:var(--muted)">Circularity index so far: <b style="color:var(--ink)">${sc.idx}</b> · Badges: ${badges().join(" · ")||"none yet"}</p>
+    <div class="tablewrap"><table><thead><tr><th>Region</th><th>Product</th><th>Model</th><th>Econ</th><th>Env</th><th>Social</th><th>Profit</th></tr></thead><tbody>
+    ${ids.map(id=>{const r=R(id),v=S.ventures[id];return `<tr><td><b>${r.name}</b><br><small style="color:var(--muted)">${r.material}</small></td>
+      <td>${r.products[v.product].name}</td><td>${MODELS[v.model].name}</td><td>${v.econ}</td><td>${v.env}</td><td>${v.soc}</td>
+      <td style="color:${v.profit>=0?"var(--accent)":"var(--bad)"}">${v.profit>=0?"+":""}${fmt$(v.profit)}</td></tr>`;}).join("")}
+    </tbody></table></div>` : `<p class="empty">No ventures yet. Head to the world map to launch your first one.</p>`}
+  </div>`;
+  $("#resetBtn").onclick=()=>{if(confirm("Start a new game? Your current progress will be cleared."))resetGame();};
+}
+
+function renderLibrary(){
+  const regionRefs = REGIONS.map(r=>`<div class="card ref"><span class="tag">${r.country}</span><span class="tag">${r.material}</span>
+      <h3>${r.evidence.cite.title}</h3><p>${citeHTML(r.evidence.cite)}</p><p style="color:var(--ink)">${r.evidence.finding}</p></div>`).join("");
+  const found = FOUNDATIONS.map(c=>`<div class="card ref"><span class="tag">Business models</span><h3>${c.title}</h3><p>${citeHTML(c)}</p><p style="color:var(--ink)">${c.note}</p></div>`).join("");
+  const further = FURTHER.map(c=>`<div class="card ref"><span class="tag">Further reading</span><span class="tag">${R(c.region).material}</span><h3>${c.title}</h3><p>${citeHTML(c)}</p></div>`).join("");
+  $("#library").innerHTML = `<div class="card pad" style="margin-bottom:14px"><h2>Research library</h2>
+    <p style="color:var(--muted);margin-bottom:0">Every material match in the game is grounded in a peer-reviewed study that proposes or tests the substitution. Summaries are paraphrased — open the DOI to read the full paper.</p></div>
+    <h3 style="margin:18px 0 10px">Circular business model foundations</h3><div class="cols">${found}</div>
+    <h3 style="margin:22px 0 10px">Material substitution evidence</h3><div class="cols">${regionRefs}</div>
+    <h3 style="margin:22px 0 10px">Further reading</h3><div class="cols">${further}</div>`;
+}
+
+function renderGlossary(){ $("#gloss").innerHTML = GLOSSARY.map(([t,d])=>`<dt>${t}</dt><dd>${d}</dd>`).join(""); }
+
+function renderHowto(){
+  $("#howto").innerHTML = `<h2>How to play</h2>
+  <p>You are a circular-economy entrepreneur with ${fmt$(START_CAPITAL)} to invest. Around the world, valuable materials are being burned, dumped or landfilled. Your job is to turn them into profitable products.</p>
+  <ol>
+    <li><b>Explore the map.</b> Each marker is a region with an abundant waste or by-product.</li>
+    <li><b>Match material to product.</b> Pick the product that can use the material as a substitute. Only some options are backed by peer-reviewed research — choose wrong and your lab trials may fail.</li>
+    <li><b>Read the research check.</b> See what the study found, how mature the technology is, and its limits.</li>
+    <li><b>Choose a business model.</b> How will you capture value — selling a substitute input, getting paid to recover waste, or something else?</li>
+    <li><b>Pick up to two strategy levers.</b> Every region has a key barrier. The right lever removes it; others add general benefits.</li>
+    <li><b>Launch and learn.</b> The simulation scores you on economic, environmental and social results, then throws in a real-world-style event.</li>
+  </ol>
+  <p>New regions unlock after 2 and 5 ventures. The game ends when you've tried every region or run out of capital. Your progress saves automatically in this browser.</p>
+  <h3 style="margin-top:20px">The five circular business models</h3>
+  <div class="models">${Object.values(MODELS).map(m=>`<div><b>${m.name}</b>${m.desc}</div>`).join("")}</div>
+  <div class="callout warn" style="margin-top:18px">Game economics are simplified and in game units. They teach the logic of circular ventures, not real-world forecasts.</div>
+  <div class="row"><span></span><button class="btn" id="goPlay">Go to the map →</button></div>`;
+  $("#goPlay").onclick=()=>show("play");
+}
+
+/* =========================================================
+   NAV, THEME, INIT
+   ========================================================= */
+function show(v){
+  document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  window.scrollTo({top:0});
+}
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>show(b.dataset.v));
+$("#themeBtn").onclick=()=>{
+  const root=document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark?"light":"dark";
+  try{localStorage.setItem(KEY+"-theme",root.dataset.theme);}catch(e){}
+};
+try{const t=localStorage.getItem(KEY+"-theme"); if(t) document.documentElement.dataset.theme=t;}catch(e){}
+
+function renderAll(){renderStats();renderMap();renderSide();renderPortfolio();renderLibrary();renderGlossary();renderHowto();}
+renderAll();
+
+if(!S.seenIntro){
+  $("#modalBody").innerHTML = `<div class="eyebrow">Welcome</div><h2 style="font-size:26px;margin:4px 0 10px">Waste to Worth</h2>
+    <p>Rice husks in Vietnam. Fishing nets in the Baltic. Coffee grounds in Melbourne. Around the world, useful materials are thrown away.</p>
+    <p>You have <b>${fmt$(START_CAPITAL)}</b>. Find the waste, match it to a product backed by peer-reviewed research, design a circular business model, and build a portfolio that pays off for the economy, the planet and people.</p>
+    <div class="row"><button class="btn ghost" id="introHow">How to play</button><button class="btn" id="introGo">Start exploring</button></div>`;
+  $("#modal").classList.add("on");
+  const close=()=>{S.seenIntro=true;save();$("#modal").classList.remove("on");};
+  $("#introGo").onclick=close;
+  $("#introHow").onclick=()=>{close();show("howto");};
+}
+</script>
+</body>
+</html>
